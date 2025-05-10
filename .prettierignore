@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+coverage/
+*.log
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Frontend specific build/output folders if not covered by generic dist/build
+frontend/dist/
+frontend/build/
+frontend/.vite/
+
+# Backend specific build/output folders
+backend/dist/
