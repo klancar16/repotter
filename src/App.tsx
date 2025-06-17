@@ -1,26 +1,30 @@
-import { useState } from "react";
-import "./App.css";
+import Table from "./Table.tsx";
+
+import CsvParser from "./CsvParser.tsx";
+import { DataProvider } from "./context/DataContext.tsx";
+import { StatusProvider } from "./context/StatusContext.tsx";
+import StatusBar from "./StatusBar.tsx";
 
 function App() {
-  const [count, setCount] = useState(10);
-
-  return (
-    <>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  );
+    return (
+        <>
+            <h1>Repotter</h1>
+            <StatusProvider>
+                <StatusBar />
+                <DataProvider>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div className="md:col-span-1">
+                            <CsvParser />
+                        </div>
+                        <div className="md:col-span-2">{/* TODO */}</div>
+                    </div>
+                    <div className="tableContainer">
+                        <Table />
+                    </div>
+                </DataProvider>
+            </StatusProvider>
+        </>
+    );
 }
-
 
 export default App;
