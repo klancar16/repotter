@@ -10,12 +10,13 @@ const CsvParser: React.FC = () => {
     const { setStatus } = useStatus();
 
     const parseCsvFile = (event: ChangeEvent<HTMLInputElement>): void => {
-        // set isLoading to true when processing the file, so the spinner can be shown
-        setIsLoading(true);
-
         if (!event.target.files || event.target.files.length === 0) {
             return;
         }
+
+        // set isLoading to true when processing the file, so the spinner can be shown
+        setIsLoading(true);
+
         const fileContent = event.target.files[0];
 
         Papa.parse<PotType>(fileContent, {

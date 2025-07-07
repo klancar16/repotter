@@ -1,5 +1,7 @@
+export type PotId = string;
+
 export type PotType = {
-    id: string;
+    id: PotId;
     pot_size: number;
     has_plant: boolean;
     size_increase: number;

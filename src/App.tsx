@@ -4,6 +4,7 @@ import CsvParser from "./CsvParser.tsx";
 import { DataProvider } from "./context/DataContext.tsx";
 import { StatusProvider } from "./context/StatusContext.tsx";
 import StatusBar from "./StatusBar.tsx";
+import ResultOutput from "./ResultOutput.tsx";
 
 function App() {
     return (
@@ -16,7 +17,9 @@ function App() {
                         <div className="md:col-span-1">
                             <CsvParser />
                         </div>
-                        <div className="md:col-span-2">{/* TODO */}</div>
+                        <div className="md:col-span-2">
+                            <ResultOutput />
+                        </div>
                     </div>
                     <div className="tableContainer">
                         <Table />
