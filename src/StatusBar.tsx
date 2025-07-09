@@ -5,7 +5,7 @@ const StatusBar: React.FC = () => {
     const { status } = useStatus();
 
     return (
-        <div className="statusBar" role="alert">
+        <div className="status-bar" role="alert">
             <span className="sr-only">Info</span>
             <div>
                 <span className="font-bold">Status:</span> {status}

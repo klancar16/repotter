@@ -1,21 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useData } from "./context/data";
 import type { PotType, PotId } from "./types";
+import { ArrowRightIcon } from "./assets/Icons.tsx";
 
 type RepotResult = {
-    repottingChains: Array<string>;
+    repottingChainArray: Array<Array<PotType>>;
     potsToBuy: Map<number, number>;
     approximateSoilNeeded: number;
 };
-
-class Node<T> {
-    data: T;
-    next: Node<T> | null = null;
-
-    constructor(data: T) {
-        this.data = data;
-    }
-}
 
 const calculateSoilNeededForPotSize = (diameter: number): number => {
     // We calculate volume for cylinder, but because the pots used are
@@ -50,19 +42,13 @@ const ResultOutput: React.FC = () => {
         return potsPerSize;
     };
 
-    function build_final_result(chains: Array<Node<PotType>>) {
-        const chainStrings: Array<string> = [];
+    function build_final_result(chains: Array<Array<PotType>>) {
+        const chainsArray: Array<Array<PotType>> = [];
         const potsToBuy: Map<number, number> = new Map();
         let soilNeeded = 0;
         for (const chain of chains) {
-            let chainString = "";
-            let chainHead: Node<PotType> | null = chain;
-            while (chainHead) {
-                const pot = chainHead.data;
+            for (const pot of chain) {
                 const newPotSize = pot.pot_size + (pot.size_increase ? pot.size_increase : 0);
-
-                // build the chain string, so we can easily output the repotting sequence
-                chainString = chainString.concat(`${pot.id}${chainHead.next ? " <-- " : ""}`);
 
                 // calculate how much soil we need for the pot
                 soilNeeded = soilNeeded + calculateSoilNeededForPotSize(newPotSize);
@@ -71,18 +57,15 @@ const ResultOutput: React.FC = () => {
                 if (pot.id.includes("NEW")) {
                     potsToBuy.set(newPotSize, (potsToBuy.get(newPotSize) ?? 0) + 1);
                 }
-
-                chainHead = chainHead.next;
             }
-            chainStrings.push(chainString);
         }
-        return { chainStrings, potsToBuy, soilNeeded };
+        return { chainsArray, potsToBuy, soilNeeded };
     }
 
     const buildRepottingChains = (potsPerSize: Map<number, Array<PotType>>) => {
         const processedPotIds: Array<PotId> = [];
         const potSizes: Array<number> = Array.from(potsPerSize.keys()).sort();
-        const chains: Array<Node<PotType>> = [];
+        const chains: Array<Array<PotType>> = [];
 
         for (const potSize of potSizes) {
             const pots = potsPerSize.get(potSize);
@@ -98,23 +81,14 @@ const ResultOutput: React.FC = () => {
                 // if the pot was already processed, we can skip it
                 if (processedPotIds.includes(pot.id)) continue;
 
-                let chainHead: Node<PotType> | null = null;
-                let chainTail: Node<PotType> | null = null;
+                const chainArray: Array<PotType> = [];
                 let nextInChain: PotType | undefined = pot;
                 while (nextInChain) {
                     // put the current pot in the processed pots
                     processedPotIds.push(nextInChain.id);
+                    chainArray.push(nextInChain);
 
                     const newSize: number = nextInChain.pot_size + nextInChain.size_increase;
-
-                    const node = new Node(nextInChain);
-                    if (chainHead === null) {
-                        chainHead = node;
-                        chainTail = node;
-                    } else if (chainTail) {
-                        chainTail.next = node;
-                        chainTail = node;
-                    }
 
                     // if the pot doesn't have a plant, we should stop the chain here
                     if (!nextInChain.has_plant) break;
@@ -125,35 +99,33 @@ const ResultOutput: React.FC = () => {
                     // If there is no next in the chain, it means we need to repot the plant in
                     // a new pot. We create a new pot with id=NEW_${newSize}.
                     if (nextInChain === undefined) {
-                        const lastNode = new Node({ id: `NEW_${newSize}`, pot_size: newSize } as PotType);
-                        lastNode.next = chainHead;
-                        chainHead = lastNode;
+                        chainArray.push({ id: `NEW_${newSize}`, pot_size: newSize } as PotType);
                     }
                 }
 
-                if (chainHead) {
-                    chains.push(chainHead);
+                if (chainArray) {
+                    chains.push(chainArray);
                 }
             }
         }
         return chains;
     };
 
-    const findChains = (): void => {
+    useEffect(() => {
         const nonRetiredPots = data.filter((pot) => pot.has_plant || !pot.retired);
         const potsPerSize = groupPotsBySize(nonRetiredPots);
         const chains = buildRepottingChains(potsPerSize);
-        const { chainStrings, potsToBuy, soilNeeded } = build_final_result(chains);
+        const { potsToBuy, soilNeeded } = build_final_result(chains);
 
         setOutputData({
-            repottingChains: chainStrings,
             potsToBuy: potsToBuy,
             approximateSoilNeeded: soilNeeded,
+            repottingChainArray: chains,
         });
-    };
+    }, [data]);
 
     const parsePotsToBuyMap = (potsToBuy: Map<number, number>) => {
-        const content = [<p>Pots needed:</p>];
+        const content = [];
         for (const [key, value] of potsToBuy) {
             content.push(
                 <p key={`pot-${key}`}>
@@ -164,20 +136,71 @@ const ResultOutput: React.FC = () => {
         return content;
     };
 
-    return (
-        <div className="flex flex-col me-4 py-4">
-            <button type="button" className="FindChains" onClick={findChains}>
-                Find chains
-            </button>
-            <div className="result">
-                {outputData?.repottingChains.map((chainString, index) => {
-                    return <p key={index}>{chainString}</p>;
-                })}
-                <br />
-                {outputData?.potsToBuy ? parsePotsToBuyMap(outputData?.potsToBuy) : <p></p>}
-                <br />
-                <p>Approximate amount of soil needed: {outputData?.approximateSoilNeeded.toFixed(2)} l</p>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SummaryCard = ({ title, value }: { title: string; value: any }) => (
+        <div className="summary-card">
+            <div>
+                <p className={"text-sm text-gray-600 dark:text-gray-300"}>{title}</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{value}</p>
             </div>
+        </div>
+    );
+
+    const RepottingChain = ({ chain }: { chain: Array<PotType> }) => (
+        <div className="p-4 border border-gray-200 dark:border-gray-700">
+            <div className="flex flex-col sm:flex-row items-center gap-2">
+                <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-md text-center w-full sm:w-auto">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Plant from</p>
+                    <p className="font-bold text-lg text-gray-900 dark:text-gray-100">{chain[0].id}</p>
+                </div>
+
+                {chain.slice(1).map((pot, index) => (
+                    <React.Fragment key={index}>
+                        <ArrowRightIcon />
+                        <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-md text-center w-full sm:w-auto">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Moves to</p>
+                            <p className="font-bold text-lg text-gray-900 dark:text-gray-100">{pot.id}</p>
+                        </div>
+                    </React.Fragment>
+                ))}
+            </div>
+        </div>
+    );
+
+    return (
+        <div>
+            {outputData ? (
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md ">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Repotting Plan</h2>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                        <SummaryCard
+                            title="New Pots Needed"
+                            value={outputData?.potsToBuy ? parsePotsToBuyMap(outputData?.potsToBuy) : <p></p>}
+                        />
+                        <SummaryCard
+                            title="Approx. Soil Needed"
+                            value={`${outputData?.approximateSoilNeeded.toFixed(2)} L`}
+                        />
+                    </div>
+                    <div className="space-y-4">
+                        <h3 className="font-semibold text-gray-700 dark:text-gray-300">Repotting Chains</h3>
+                        {outputData.repottingChainArray.map((chain, index) => (
+                            <RepottingChain key={index} chain={chain} />
+                        ))}
+                    </div>
+                </div>
+            ) : (
+                <div className="text-center bg-white dark:bg-gray-800 p-12 rounded-xl shadow-md">
+                    <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-gray-100">
+                        Your plan will appear here
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        Upload a CSV file to generate your repotting steps.
+                    </p>
+                </div>
+            )}
         </div>
     );
 };
