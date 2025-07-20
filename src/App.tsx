@@ -48,7 +48,6 @@ function App() {
             <div className="bg-green-50 dark:bg-gray-900 font-sans text-gray-800 min-h-screen">
                 <Header isDarkMode={isDarkMode} toggleDarkMode={() => setIsDarkMode(!isDarkMode)} />
                 <StatusProvider>
-                    {/*<StatusBar />*/}
                     <DataProvider>
                         <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
