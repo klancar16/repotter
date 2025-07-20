@@ -47,6 +47,8 @@ A web application to help organize and plan repotting of plants. Harry Repotter 
     - `note`: Any additional notes
     - `retired`: Whether the pot is retired/no longer in use (boolean)
 
+    Alternatively, you can use an example CSV file: `example/plants_pots_example.csv`.
+
 2. **Upload your CSV** using the file upload interface
 
 3. **View your repotting plan**:

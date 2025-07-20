@@ -1,0 +1,9 @@
+id,pot_size,has_plant,size_increase,needs_a_stick_size,note,retired
+P1,27,TRUE,3,,,FALSE
+P2,24,TRUE,3,,,FALSE
+P3,21,TRUE,3,,,FALSE
+P4,17,FALSE,,,,TRUE
+P5,11,TRUE,4,,,FALSE
+P6,15,TRUE,2,,,FALSE
+P7,17,FALSE,,,,,FALSE
+P8,35,TRUE,5,,,FALSE
