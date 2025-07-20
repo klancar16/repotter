@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useMemo } from "react";
 import { useData } from "./context/data";
 import type { PotType, PotId } from "./types";
 import { ArrowRightIcon } from "./assets/Icons.tsx";
@@ -23,7 +23,6 @@ const calculateSoilNeededForPotSize = (diameter: number): number => {
 
 const ResultOutput: React.FC = () => {
     const { data } = useData();
-    const [outputData, setOutputData] = useState<RepotResult>();
 
     const groupPotsBySize = (pots: PotType[]): Map<number, Array<PotType>> => {
         const potsPerSize: Map<number, Array<PotType>> = new Map();
@@ -42,8 +41,7 @@ const ResultOutput: React.FC = () => {
         return potsPerSize;
     };
 
-    function build_final_result(chains: Array<Array<PotType>>) {
-        const chainsArray: Array<Array<PotType>> = [];
+    function buildFinalResult(chains: Array<Array<PotType>>) {
         const potsToBuy: Map<number, number> = new Map();
         let soilNeeded = 0;
         for (const chain of chains) {
@@ -59,7 +57,7 @@ const ResultOutput: React.FC = () => {
                 }
             }
         }
-        return { chainsArray, potsToBuy, soilNeeded };
+        return { potsToBuy, soilNeeded };
     }
 
     const buildRepottingChains = (potsPerSize: Map<number, Array<PotType>>) => {
@@ -111,17 +109,19 @@ const ResultOutput: React.FC = () => {
         return chains;
     };
 
-    useEffect(() => {
+    const outputData = useMemo((): RepotResult | undefined => {
+        if (!data.length) return undefined;
+
         const nonRetiredPots = data.filter((pot) => pot.has_plant || !pot.retired);
         const potsPerSize = groupPotsBySize(nonRetiredPots);
         const chains = buildRepottingChains(potsPerSize);
-        const { potsToBuy, soilNeeded } = build_final_result(chains);
+        const { potsToBuy, soilNeeded } = buildFinalResult(chains);
 
-        setOutputData({
-            potsToBuy: potsToBuy,
+        return {
+            potsToBuy,
             approximateSoilNeeded: soilNeeded,
             repottingChainArray: chains,
-        });
+        };
     }, [data]);
 
     const parsePotsToBuyMap = (potsToBuy: Map<number, number>) => {
@@ -136,8 +136,7 @@ const ResultOutput: React.FC = () => {
         return content;
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SummaryCard = ({ title, value }: { title: string; value: any }) => (
+    const SummaryCard = ({ title, value }: { title: string; value: React.ReactNode }) => (
         <div className="summary-card">
             <div>
                 <p className={"text-sm text-gray-600 dark:text-gray-300"}>{title}</p>
@@ -177,11 +176,11 @@ const ResultOutput: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                         <SummaryCard
                             title="New Pots Needed"
-                            value={outputData?.potsToBuy ? parsePotsToBuyMap(outputData?.potsToBuy) : <p></p>}
+                            value={outputData.potsToBuy ? parsePotsToBuyMap(outputData.potsToBuy) : null}
                         />
                         <SummaryCard
                             title="Approx. Soil Needed"
-                            value={`${outputData?.approximateSoilNeeded.toFixed(2)} L`}
+                            value={`${outputData.approximateSoilNeeded.toFixed(2)} L`}
                         />
                     </div>
                     <div className="space-y-4">
